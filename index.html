@@ -29,7 +29,7 @@
     </script>
     <style>
         /* =================================
-           1. 全体の背景 - 明るいクリスマスグリーンに固定 (背景を元に戻す対応)
+           1. 全体の背景 - 明るいクリスマスグリーンに固定
            ================================= */
         body {
             background-color: #34D399; /* クリスマスグリーン */
@@ -53,7 +53,7 @@
                 filter: drop-shadow(0 0 7px #E57373) drop-shadow(0 0 7px #F9FAFB); /* 赤と白の光 */
             }
             50% { 
-                filter: drop_shadow(0 0 10px #E57373) drop-shadow(0 0 10px #34D399); 
+                filter: drop_shadow(0 0 10px #E57373) drop_shadow(0 0 10px #34D399); 
             }
             100% { 
                 filter: drop-shadow(0 0 7px #F9FAFB) drop-shadow(0 0 7px #E57373); /* 白と赤の光 */
@@ -258,16 +258,13 @@
          */
         async function callGeminiApi() {
             // =================================================================================
-            // 🚨🚨🚨 重要: GitHub Pagesなどの外部環境で実行する場合 🚨🚨🚨
-            // 
-            // 以下の「const apiKey = "";」は、この実行環境内でのみ自動でキーが挿入され動作します。
-            // 外部環境（GitHub Pagesなど）で実行するには、ユーザー自身の有効な
-            // Gemini APIキーを以下の行の **"" の中に直接記述**する必要があります。
+            // 🚨🚨🚨 重要: APIキー設定（自動認証を使用するため空欄） 🚨🚨🚨
+            // この実行環境では、APIキーを空欄にすることで自動認証が機能します。
             // ---------------------------------------------------------------------------------
-            const apiKey = "AIzaSyArStzXMhBMRe88bVYB5d2rcJArpu8gpGs";
+            const apiKey = ""; // 👈 空欄のままにしてください
             // ---------------------------------------------------------------------------------
-            // 変更例: const apiKey = "AIzaSy...your-actual-key-here..."; 
             // =================================================================================
+            
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
             // *** システムプロンプト: 最新の厳格な挨拶ルールを維持 ***
@@ -309,7 +306,6 @@
                         * 代わりに、**ユーザーが言及した具体的なプレゼント（例：大きなゲーム機、車、家など）に関連づけて**、調達（コスト）、在庫（ソリの積載量）、およびロジスティクス（配達の難易度）には制約があることを、親切なトーンで伝えてください。
                         * **回答の指針:** 高価すぎるものや、ソリに載らないほど大きすぎるものなど、**魔法とロジスティクスに限界がある**ことを指摘してください。**定型文に頼らず**、個別の要望に応じて「それは少し調達コストが高いかもしれません」「ソリのスペースが限られているため、大きなプレゼントは在庫管理が大変なんです」といった、**具体的かつやんわりとした**回答を生成してください。
             `;
-            // *** 修正終わり ***
 
             const payload = {
                 // 履歴全体をcontentsとして渡すことで、文脈をモデルに提供
@@ -330,6 +326,7 @@
                         body: JSON.stringify(payload)
                     });
 
+                    // 429 (レート制限)の場合は指数バックオフでリトライ
                     if (response.status === 429) {
                         if (attempt < maxRetries - 1) {
                             const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
@@ -342,7 +339,12 @@
                     }
 
                     if (!response.ok) {
-                        throw new Error(`API returned status ${response.status}`);
+                        // 401 Unauthorized の場合は、自動認証が失敗した可能性が高い
+                        if (response.status === 401) {
+                            throw new Error("API認証エラーが発生しました。時間をおいて再度お試しください。");
+                        }
+                        // その他のエラー
+                        throw new Error(`API接続エラーが発生しました (ステータス: ${response.status})。`);
                     }
 
                     const result = await response.json();
@@ -351,19 +353,17 @@
                     if (candidate && candidate.content?.parts?.[0]?.text) {
                         return candidate.content.parts[0].text;
                     } else {
-                        throw new Error("API response content was empty.");
+                        // 応答が空だがステータスはOKの場合
+                        throw new Error("応答内容が空でした。質問内容がクリスマスの魔法に関係するか再度確認してください。");
                     }
                 } catch (error) {
-                    console.error("API call error:", error);
-                    // エラーメッセージを改善: 認証エラーの可能性が高いことを示唆
-                    if (error.message.includes('401') || apiKey === "") {
-                         throw new Error("認証エラーが発生しました。外部で実行する場合、コード内のコメントを参考に有効なAPIキーを設定してください。");
-                    }
-                    if (attempt === maxRetries - 1 || response?.status !== 429) {
-                        throw error;
-                    }
+                    // JavaScriptエラーや、リトライを使い果たした後のエラーをキャッチ
+                    console.error("Chat Error:", error);
+                    // ユーザーフレンドリーなエラーメッセージを返す
+                    throw new Error(error.message);
                 }
             }
+            // maxRetriesを通過した場合は到達しないが、念のため
             throw new Error("応答を取得できませんでした。時間をおいてお試しください。");
         }
 
@@ -386,8 +386,9 @@
                 const botResponse = await callGeminiApi();
                 addMessage(botResponse, 'bot');
             } catch (error) {
+                // エラーメッセージは callGeminiApi から返された、原因を特定しやすいものを使用
                 console.error("Chat Error:", error);
-                errorMessage.textContent = error.message.includes("APIキー") ? error.message : "申し訳ありません。北極との通信が一時的に途絶えました。もう一度お試しください。";
+                errorMessage.textContent = error.message;
                 errorMessage.classList.remove('hidden');
                 // エラーが発生した場合、直前のユーザーメッセージを履歴から削除して再試行を促す
                 chatHistory.pop(); 
