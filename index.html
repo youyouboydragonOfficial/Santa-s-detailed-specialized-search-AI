@@ -13,7 +13,10 @@
                     colors: {
                         // 薄い、優しい赤を維持
                         'santa-red': '#E57373', // Light, Gentle Red
-                        'santa-green': '#064e3b', // Deep Forest Green (背景色に使用)
+                        // 背景色：明るいエメラルドグリーン
+                        'santa-green': '#34D399', // Bright Emerald Green
+                        // チャットバブルのコントラスト用（少し暗い色）
+                        'chat-bubble-bg': '#059669', // Darker Emerald Green for Contrast
                         'snow-white': '#F9FAFB', 
                         'star-gold': '#FBBF24', 
                     },
@@ -26,17 +29,41 @@
     </script>
     <style>
         /* =================================
-           1. 全体の背景 - クリスマスグリーンに固定
+           1. 全体の背景 - 明るいクリスマスグリーンに固定
            ================================= */
         body {
-            /* 落ち着いたクリスマスグリーンに固定 */
-            background-color: #064e3b; 
+            background-color: #34D399; 
             overflow: hidden; 
             position: relative;
         }
 
         /* =================================
-           2. 雪マーク (❄️) アニメーション
+           2. クリスマスライトの脈動アニメーション
+           ================================= */
+        .christmas-lights {
+            /* 複数色の光を重ねて、電飾が点滅しているような効果を表現 */
+            position: relative;
+            filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.8)) 
+                    drop-shadow(0 0 5px rgba(0, 255, 0, 0.8)) 
+                    drop-shadow(0 0 5px rgba(255, 255, 0, 0.8));
+            animation: light-pulse 3s infinite alternate;
+        }
+
+        @keyframes light-pulse {
+            /* 赤と金色の光が交互に強くなる */
+            0% { 
+                filter: drop-shadow(0 0 7px #E57373) drop-shadow(0 0 7px #FBBF24); 
+            }
+            50% { 
+                filter: drop-shadow(0 0 10px #E57373) drop-shadow(0 0 10px #34D399); 
+            }
+            100% { 
+                filter: drop-shadow(0 0 7px #FBBF24) drop-shadow(0 0 7px #E57373); 
+            }
+        }
+
+        /* =================================
+           3. 雪マーク (❄️) アニメーション
            ================================= */
         .snow-container {
             position: absolute;
@@ -49,7 +76,6 @@
             z-index: 10;
         }
 
-        /* 雪を降らせるための基本スタイル */
         .snowflake {
             color: #ffffff; 
             text-shadow: 0 0 3px rgba(255, 255, 255, 0.5); 
@@ -59,7 +85,6 @@
             animation: fall linear infinite;
         }
 
-        /* 雪マークのアニメーション */
         @keyframes fall {
             0% { transform: translateY(0) rotate(0deg); opacity: 0; }
             10% { opacity: 0.8; }
@@ -67,7 +92,7 @@
         }
 
         /* =================================
-           3. その他デザイン調整
+           4. その他デザイン調整
            ================================= */
         /* カスタムスクロールバー */
         #chat-messages::-webkit-scrollbar {
@@ -80,12 +105,12 @@
         }
 
         #chat-messages::-webkit-scrollbar-track {
-            background: rgba(4, 120, 87, 0.1);
+            background: rgba(255, 255, 255, 0.2);
         }
 
-        /* アシスタントメッセージの背景はコントラストを維持するため濃いグリーンを使用 */
+        /* アシスタントメッセージの背景 */
         .bot-bubble {
-            background-color: #047857; /* 濃い目のフォレストグリーン */
+            background-color: #059669; 
         }
     </style>
 </head>
@@ -95,8 +120,8 @@
     <!-- 雪の結晶を生成するコンテナ -->
     <div class="snow-container" id="snow-container"></div>
 
-    <!-- Chat Bot Container (標準サイズ max-w-2xl) -->
-    <div class="w-full max-w-2xl bg-snow-white rounded-xl shadow-2xl overflow-hidden backdrop-blur-sm bg-opacity-95 border-4 border-santa-red z-20" style="min-height: 85vh;">
+    <!-- Chat Bot Container (標準サイズ max-w-2xl) - クリスマスライトクラスを適用 -->
+    <div class="w-full max-w-2xl bg-snow-white rounded-xl shadow-2xl overflow-hidden backdrop-blur-sm bg-opacity-95 border-4 border-santa-red z-20 christmas-lights" style="min-height: 85vh;">
 
         <!-- Header (薄い赤) -->
         <div class="bg-santa-red text-white py-6 px-4 flex items-center justify-center rounded-t-lg border-b-2 border-star-gold">
@@ -111,10 +136,10 @@
             <div class="flex justify-start">
                 <div class="max-w-md bot-bubble text-white p-4 rounded-t-2xl rounded-br-2xl shadow-lg border-b border-star-gold">
                     <p class="font-bold text-lg flex items-center">
-                        <!-- アイコンをトナカイ (🦌) に戻しました -->
+                        <!-- アイコンはトナカイ (🦌) -->
                         <span class="mr-2 text-2xl" role="img" aria-label="Elf Icon">🦌</span>
-                        <!-- 挨拶は「クリスマス特化型検索AIにようこそ！」を維持 -->
-                        クリスマス特化型検索AIにようこそ！
+                        <!-- 挨拶は「こんにちは！」を追加 -->
+                        こんにちは！ クリスマス特化型検索AIにようこそ！
                     </p>
                     <p class="mt-2 text-sm">私は、サンタさんの移動やクリスマスの魔法に関する情報を検索・提供します。</p>
                     <p class="mt-1 text-sm font-light">フライトレーダーやNORADなど、サンタさんの移動やプレゼント配達に関する質問があれば、何でもお尋ねくださいね！</p>
@@ -233,17 +258,27 @@
          * Gemini APIを指数バックオフで呼び出す関数 (履歴をcontentsに含める)
          */
         async function callGeminiApi() {
+            // =================================================================================
+            // !!! GitHub Pagesなどの外部環境で実行する場合の注意 !!!
+            //
+            // この「const apiKey = "";」は、この実行環境内でのみキーが自動挿入され動作します。
+            // 外部環境（GitHub Pagesなど）で実行するには、ユーザー自身の有効な
+            // Gemini APIキーを以下の行に直接記述する必要があります (セキュリティ上のリスクがあります)。
+            //
+            // 変更例: const apiKey = "YOUR_PERSONAL_GEMINI_API_KEY_HERE"; 
+            // =================================================================================
             const apiKey = ""; 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
-            // *** システムプロンプトを修正: 役割と挨拶文を明確に指定 ***
+            // *** システムプロンプトを修正: 挨拶のルールを変更 (結びの挨拶を追加) ***
             const systemPrompt = `
-                あなたは「クリスマス特化型検索AI」です。以下のルールに**厳格に**従い、親切で温かいトーンで応答してください。
+                あなたは「クリスマス特化型検索AI」です。以下のルールに**厳格に**従い、親切で温かいトーンで応答してください。クリスマスの夢を壊さない応答と、安全なコンテンツ提供を徹底してください。
                 
-                1.  **トーン、言語、役割設定、挨拶（最初のターン限定）:**
+                1.  **トーン、言語、役割設定、挨拶（最初のターン限定/会話終了時）:**
                     * 応答は、ユーザーが入力した言語（日本語または英語）を判断し、**同じ言語で応答**してください。
                     * 親切で温かいトーンを維持してください。店員のような「いらっしゃいませ」は**絶対に使用しないでください**。
-                    * **挨拶は、会話の最初のターン（履歴が存在しない、またはユーザーの最初の発言に対する応答）でのみ、歓迎の意を込めて行ってください。** 日本語の場合は「クリスマス特化型検索AIにようこそ！」、英語の場合は「Welcome to the Christmas-Specialized Search AI!」といった、役割に沿った歓迎の挨拶を使用してください。2ターン目以降は、**挨拶を繰り返さず**、すぐに本題に入ってください。
+                    * **歓迎の挨拶:** 会話の最初のターンでのみ、「クリスマス特化型検索AIにようこそ！」といった歓迎の挨拶を使用し、すぐに本題に入ってください。
+                    * **結びの挨拶 (重要):** ユーザーが「ありがとう」「さようなら」などの会話終了を示す言葉を使った場合、または質問が途切れたと判断できる場合は、最後に「暖かい一日をお過ごしください」「素敵なクリスマスを！」といった結びの挨拶を添えてください。
                 
                 2.  **文脈の保持:** 過去の会話履歴（contentsに含まれる）を常に参照し、文脈を完全に理解した上で応答してください。
                 
@@ -263,10 +298,11 @@
                     * **C. サンタ関連外の話題の厳格な拒否（無意味な入力を含む）:** 上記 4.A、4.B に該当しない、サンタさんの仕事やクリスマスの魔法に関係のない質問、**および「あ」のような意味を持たない短い入力**に対しては、以下の定型文を使用して**厳格に拒否**してください。
                         （応答言語に合わせて）「それはサンタさんのことではないようです。私たちはクリスマスの魔法に関することにしか集中できません。サンタさんに関する質問をしてくださいね。」
                     
-                    * **D. プレゼント要望への対応（夢と現実の調和）：**
+                    * **D. プレゼント要望への対応（夢と現実の調和）:**
+                        * **プレゼントの調達設定:** プレゼントは北極の工房で作られるのではなく、**世界中の最高のサプライヤーからエルフのロジスティクスチームが調達・在庫管理**しているという設定で応答してください。
                         * ユーザーが具体的なプレゼントの要望（例：「〇〇が欲しい」「プレゼントは何がいいか」）を伝えてきた場合、**サンタの存在や夢を否定するような回答（例：サンタを信じていない、本当は親が贈っているなど）は絶対にしないでください**。
-                        * 代わりに、サンタの魔法やエルフのロジスティクスには制約があることを、親切なトーンで伝えてください。
-                        * **定型文例:** （応答言語に合わせて）「それは素敵な夢ですね！サンタさんは皆さんの願いを叶えたいと思っていますが、高価すぎるものや、トナカイのソリには乗せられないほど大きすぎるものなど、**魔法とロジスティクスにも限界がある**ことをご理解くださいね。エルフたちが知恵を絞って、皆さんが最も喜ぶプレゼントを準備してくれますよ。」
+                        * 代わりに、**ユーザーが言及した具体的なプレゼント（例：大きなゲーム機、車、家など）に関連づけて**、調達（コスト）、在庫（ソリの積載量）、およびロジスティクス（配達の難易度）には制約があることを、親切なトーンで伝えてください。
+                        * **回答の指針:** 高価すぎるものや、ソリに載らないほど大きすぎるものなど、**魔法とロジスティクスに限界がある**ことを指摘してください。**定型文に頼らず**、個別の要望に応じて「それは少し調達コストが高いかもしれません」「ソリのスペースが限られているため、大きなプレゼントは在庫管理が大変なんです」といった、**具体的かつやんわりとした**回答を生成してください。
             `;
             // *** 修正終わり ***
 
@@ -314,6 +350,10 @@
                     }
                 } catch (error) {
                     console.error("API call error:", error);
+                    // エラーメッセージを改善: 認証エラーの可能性が高いことを示唆
+                    if (error.message.includes('401') || apiKey === "") {
+                         throw new Error("認証エラーが発生しました。外部で実行する場合、コード内のコメントを参考に有効なAPIキーを設定してください。");
+                    }
                     if (attempt === maxRetries - 1 || response?.status !== 429) {
                         throw error;
                     }
@@ -342,6 +382,7 @@
                 addMessage(botResponse, 'bot');
             } catch (error) {
                 console.error("Chat Error:", error);
+                errorMessage.textContent = error.message.includes("APIキー") ? error.message : "申し訳ありません。北極との通信が一時的に途絶えました。もう一度お試しください。";
                 errorMessage.classList.remove('hidden');
                 // エラーが発生した場合、直前のユーザーメッセージを履歴から削除して再試行を促す
                 chatHistory.pop(); 
